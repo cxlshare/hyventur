@@ -75,4 +75,3 @@ export AWS_REGION=us-east-2 ENVIRONMENT=local SECRET_NAME=hyventur/app-config
 # requires AWS credentials with secretsmanager:GetSecretValue + kms:Decrypt + s3:GetObject
 python app.py
 ```
-
