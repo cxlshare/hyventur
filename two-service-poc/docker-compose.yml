@@ -1,0 +1,40 @@
+services:
+  backend-service:
+    build: ./backend-service
+    environment:
+      - PORT=8001
+      - AWS_REGION=us-east-2
+      - S3_BUCKET=hyventur-demo-images
+      - IMAGE_KEY=sample.jpg
+    volumes:
+      - ${HOME}/.aws:/root/.aws:ro
+    networks:
+      - pgv2-net
+    # Deliberately no "ports:" mapping to the host — this mirrors an ECS
+    # task sitting in a private subnet with no ALB target group: reachable
+    # only from other containers on the same network, never from outside it.
+    # Its /image endpoint is only ever called by frontend-api, over pgv2-net.
+
+  frontend-api:
+    build: ./frontend-api
+    environment:
+      - PORT=8000
+      - BACKEND_URL=http://backend-service:8001
+      - AWS_REGION=us-east-1
+      - S3_BUCKET=hyventur-demo-image
+      - IMAGE_KEY=sample.jpg
+    volumes:
+      # Reuses your local AWS CLI credentials read-only so the app never
+      # needs a static access key baked in — same boto3 call this container
+      # makes today resolves via an ECS task role once this runs on Fargate.
+      - ${HOME}/.aws:/root/.aws:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      - backend-service
+    networks:
+      - pgv2-net
+
+networks:
+  pgv2-net:
+    driver: bridge
